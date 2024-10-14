@@ -6,16 +6,16 @@ The assignment focuses on creating an efficient system to process job listings t
 
 ### Speed
 
-8M per day -> ~5600 per minute -> ~93 per second so we are under the processing limit of 1000 per second, but in the interest of efficiency implementing a caching service would be important.
+8M per day -> ~5600 per minute -> ~93 per second so we are under the processing limit of 1000 per second, but in the interest of efficiency, implementing a caching service would be important.
 
-Average gRPC lookups - 1.8B total job scraped/20M unique company,title combinations = 1.11% of listing. 
-By implementing a caching mechanism we can reduce gRPC calls by over 98%, resulting in significantly speedier performance.
+Average gRPC lookups - 1.8B total job scraped/20M unique company, title combinations = 1.11% of listing. 
+By implementing a caching mechanism we can reduce gRPC calls by over 98%, resulting in significantly faster performance.
 
 Considering the performance requirements using a Redis database would provide the best performance with sub micro-second lookup times.
 
 ### Storage & Backup
 
-Considering ~20M unique pairs with an estimated an average length of 50 characters and seniority levels stored as integers it would take about 100 bytes of storage per record including overhead. That would total ~2GB database size, giving us plenty of room to scale in the future.
+Considering ~20M unique pairs with an estimated an average length of 50 characters and seniority levels stored as integers, it would take about 100 bytes of storage per record including overhead. That would total ~2GB database size, giving us plenty of room to scale in the future.
 
 Redis database can be backed up to S3 daily to ensure that data can be restored in case of failures. This is important because Redis is an in-memory database and can be susceptible to data loss.
 
@@ -31,10 +31,10 @@ If cost is a major concern, we have the option to self-host a redis instance or 
 
 ### Processing
 
-1. Read jsonl files to extract company and post titles. Sample code can be found in the `read_jsonl_file_from_s3` function in [sample.py](/sample.py).
-2. De-duplicate any potential listings to ensure we are processing the each unique pair only once and minimizing redundant cache lookups and gRPC calls. Sample code can be found in the `deduplicate_job_postings` function in [sample.py](/sample.py).
+1. Read JSONL files to extract company and post titles. Sample code can be found in the `read_jsonl_file_from_s3` function in [sample.py](/sample.py).
+2. De-duplicate any potential listings to ensure we are processing each unique pair only once and minimizing redundant cache lookups and gRPC calls. Sample code can be found in the `deduplicate_job_postings` function in [sample.py](/sample.py).
 3. Check Redis cache for each unique pair of (company, title). This is done to avoid duplicate keys in the cache. Sample code can be found in the `check_cache` function in [sample.py](/sample.py).
-4. For each pair of (company, title) not present in Redis, we make create a batch gRPC call to execute the Seniority model. Sample gRPC proto, code and Dockerfile to deploy the gRPC server can be found in [seniority_grpc](/seniority_grpc/) folder.
+4. For each pair of (company, title) not present in Redis, we create a batch gRPC call to execute the Seniority model. Sample gRPC proto, code and Dockerfile to deploy the gRPC server can be found in [seniority_grpc](/seniority_grpc/) folder.
 5. For the missing (company, title) pairs, we need to add them to the Redis cache for future lookups. Sample code can be found in the `update_cache` function in [sample.py](/sample.py).
 6. Combine the results from cache hits and gRPC calls and augment the original job listing by adding the `seniority` key to each line. Sample code can be found in the `augment_job_postings` function in [sample.py](/sample.py).
 
@@ -44,7 +44,7 @@ If cost is a major concern, we have the option to self-host a redis instance or 
 
 ## Potential future improvements
 
-1. Setup SQS to poll queue every minute to line up with new job.
-2. If the Seniority model is updated the the Redis database can be cleared/updated through an adhoc run.
-3. Move old raw jsonl files to cold storage after needed time to reduce storage costs. 
+1. Setup SQS to poll the queue every minute to line up with new job.
+2. If the Seniority model is updated then the Redis database can be cleared/updated through an adhoc run.
+3. Move old raw JSONL files to cold storage after needed time to reduce storage costs. 
 4. Hashing (company, title) pairs to reduce key size and storage costs.
