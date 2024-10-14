@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+service SeniorityModel {
+rpc InferSeniority (SeniorityRequestBatch) returns (SeniorityResponseBatch); 
+} 
+
+message SeniorityRequestBatch {
+repeated SeniorityRequest batch = 1; 
+} 
+
+message SeniorityRequest { int32 uuid = 1; 
+string company = 2; 
+string title = 3; } 
+
+message SeniorityResponseBatch {
+repeated SeniorityResponse batch = 1; 
+} 
+
+message SeniorityResponse { int32 uuid = 1; 
+int32 seniority = 2; } 
